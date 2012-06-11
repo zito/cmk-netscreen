@@ -1,0 +1,13 @@
+title: Netscreen fan check
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPLv3
+distribution: check_mk
+description:
+ This check monitors fans of a Juniper Netscreen device using
+ NETSCREEN-CHASSIS-MIB. All fans in the devices MIB are inventorized (one check
+ item per fan). The check is OK if the status of the fan is ok(1) and is
+ critical otherwise.
+
+inventory:
+ Inventory is supported. Fans found on Netscreen device are inventorized.

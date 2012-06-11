@@ -1,0 +1,69 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+###############################################################################
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###############################################################################
+
+
+# The check has been developed using a Netscreen on
+#   Juniper SSG-520 version 6.2.0r4.0 (Firewall+VPN) and
+#   Juniper SSG5-Serial version 6.1.0r2.0 (Firewall+VPN)
+#
+# +------------------------------------------------------------------+
+# | This file has been contributed by:                               |
+# |                                                                  |
+# | Václav Ovsík <vaclav.ovsik@gmail.com>             Copyright 2012 |
+# +------------------------------------------------------------------+
+
+# Example info:
+#   [['1', 'interface-saipan-mgt', '1', 'JN111778FADA'],
+#    ['2', 'interface-8-gbsw-tx-s', '1', 'VP6008']]
+#   
+#   [['1', 'MGT Board', '1', '0162102007000258']]
+#
+
+
+def inventory_netscreen_slot(info):
+    if len(info) == 0:
+        return
+    inv = []
+    for (id, type, status, sn) in info:
+        inv.append((id, None))
+    return inv
+
+def check_netscreen_slot(item, params, info):
+    l = filter(lambda x: x[0] == item, info)
+    if not l:
+        return (3, 'UNKNOWN - Item not found')
+    (sid, stype, sstatus, ssn) = l[0]
+    sstatus = saveint(sstatus)
+    status = {0: 2, 1: 0}[sstatus]
+    txt = "Slot Type: %s, SN: %s, status: %s" \
+            % (stype, ssn, {0: 'fail(0)', 1: 'good(1)'}[sstatus])
+    return (status, {0:'OK', 1:'WARN', 2:'CRIT'}[status] + ' - ' + txt)
+
+
+check_info['netscreen_slot'] = (check_netscreen_slot, "Slot%s",
+        0, inventory_netscreen_slot)
+
+snmp_info['netscreen_slot'] = ( '.1.3.6.1.4.1.3224.21.5.1', [
+            '1',    # NETSCREEN-CHASSIS-MIB::nsSlotId
+            '2',    # NETSCREEN-CHASSIS-MIB::nsSlotType
+            '3',    # NETSCREEN-CHASSIS-MIB::nsSlotStatus
+            '4',    # NETSCREEN-CHASSIS-MIB::nsSlotSN
+            ])
+
+snmp_scan_functions['netscreen_slot'] = \
+        lambda oid: oid('.1.3.6.1.2.1.1.2.0').startswith('.1.3.6.1.4.1.3224.1')

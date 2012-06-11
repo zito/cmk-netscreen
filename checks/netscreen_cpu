@@ -1,0 +1,84 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+###############################################################################
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###############################################################################
+
+
+# The check has been developed using a Netscreen on
+#   Juniper SSG-520 version 6.2.0r4.0 (Firewall+VPN) and
+#   Juniper SSG5-Serial version 6.1.0r2.0 (Firewall+VPN)
+#
+# +------------------------------------------------------------------+
+# | This file has been contributed by:                               |
+# |                                                                  |
+# | Václav Ovsík <vaclav.ovsik@gmail.com>             Copyright 2012 |
+# +------------------------------------------------------------------+
+
+# Example info:
+#  [['2', '1', '1']]
+#
+
+
+def inventory_netscreen_cpu(info):
+    if len(info[0]) != 3:
+        return
+    return [ (None, {}) ]
+
+def check_netscreen_cpu(item, params, info):
+    items = ('1min', '5min', '15min')
+    cpuinfo = [ saveint(x) for x in info[0] ]
+    cpu = dict(zip(items, cpuinfo))
+    status = 0
+    txt = "CPU utilization "
+    perf = []
+    for item in items:
+        v = cpu[item]
+        txt += '%s: %d%%' % (item, v)
+        levels = params.get(item)
+        if levels:
+            (warn, crit) = levels
+        else:
+            warn = crit = None
+        if crit and v >= crit:
+            txt += ' (!! >%d)' % crit
+            status = max(status, 2)
+        elif warn and v >= warn:
+            txt += ' (! >%d)' % warn
+            status = max(status, 1)
+        txt += ', '
+        perf.append(('cpu'+item, str(v)+'%',warn,crit))
+    return (status, {0:'OK', 1:'WARN', 2:'CRIT'}[status] + ' - ' + txt, perf)
+
+
+check_info['netscreen_cpu'] = (check_netscreen_cpu, "CPU_load",
+        1, inventory_netscreen_cpu)
+
+check_default_levels["netscreen_cpu"] = "netscreen_cpu_default_levels"
+
+factory_settings["netscreen_cpu_default_levels"] = {
+    '1min'  : None,
+    '5min'  : None,
+    '15min' : (80, 90),
+}
+
+snmp_info['netscreen_cpu'] = ( '.1.3.6.1.4.1.3224.16.1', [
+        '2',    # NETSCREEN-RESOURCE-MIB::nsResCpuLast1Min
+        '3',    # NETSCREEN-RESOURCE-MIB::nsResCpuLast5Min
+        '4',    # NETSCREEN-RESOURCE-MIB::nsResCpuLast15Min
+    ])
+
+snmp_scan_functions['netscreen_cpu'] = \
+        lambda oid: oid('.1.3.6.1.2.1.1.2.0').startswith('.1.3.6.1.4.1.3224.1')

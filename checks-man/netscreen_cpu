@@ -1,0 +1,42 @@
+title: Netscreen CPU load check
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPLv3
+distribution: check_mk
+description:
+ This check monitors the CPU load in a Juniper Netscreen device using
+ NETSCREEN-RESOURCE-MIB.
+ 
+examples:
+ # Default settings
+ netscreen_cpu_default_levels = {
+     "lmin" : None,
+     "5min" : None,
+     "15min": (80,90),
+ }
+
+perfdata:
+
+  {cpu1min} CPU percent usage averaged over last 1min.
+
+  {cpu5min} CPU percent usage averaged over last 5min.
+
+  {cpu15min} CPU percent usage averaged over last 15min.
+
+
+inventory:
+ Inventory is supported. The CPU found on Netscreen device is inventorized.
+
+[parameters]
+parameters (dict): This check uses a dictionary with keys:
+
+ {1min} a tuple (warn, crit): warning & critical levels for {cpu1min} average
+
+ {5min} a tuple (warn, crit): warning & critical levels for {cpu5min} average
+
+ {15min} a tuple (warn, crit): warning & critical levels for {cpu15min} average
+
+[configuration]
+netscreen_cpu_default_levels: dictionary based parameters are supported. Levels
+ can be specified for all three averages 1min, 5min, 15min. By default only the
+ 15min average has the warning level at 80% and the critical level at 90%.

@@ -1,0 +1,76 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+###############################################################################
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###############################################################################
+
+
+# The check has been developed using a Netscreen on
+#   Juniper SSG-520 version 6.2.0r4.0 (Firewall+VPN) and
+#   Juniper SSG5-Serial version 6.1.0r2.0 (Firewall+VPN)
+#
+# +------------------------------------------------------------------+
+# | This file has been contributed by:                               |
+# |                                                                  |
+# | Václav Ovsík <vaclav.ovsik@gmail.com>             Copyright 2012 |
+# +------------------------------------------------------------------+
+
+# Example info:
+#  [['1', '1', '42', 'CPU Temperature'], ['2', '1', '28', 'System Temperature']]
+#
+
+
+netscreen_temp_default_levels = (50, 70)
+
+def inventory_netscreen_temp(info):
+    if len(info) == 0:
+        return
+    inv = []
+    for (id, slotid, curr, desc) in info:
+        inv.append((id, 'netscreen_temp_default_levels'))
+    return inv
+
+def check_netscreen_temp(item, params, info):
+    l = filter(lambda x: x[0] == item, info)
+    if not l:
+        return (3, 'UNKNOWN - Item not found')
+    (tid, tslotid, tcurr, tdesc) = l[0]
+    tcurr = saveint(tcurr)
+    txt = "Temp Id: %s, Slot: %s, Desc: %s, Value: %d°C" \
+            % (tid, tslotid, tdesc, tcurr)
+    warn, crit = params
+    status = 0
+    if crit and tcurr >= crit:
+        txt += ' (!! >%d)' % crit
+        status = 2
+    elif warn and tcurr >= warn:
+        txt += ' (! >%d)' % warn
+        status = 1
+    return (status, {0:'OK', 1:'WARN', 2:'CRIT'}[status] + ' - ' + txt,
+            [('temp', tcurr, warn, crit)])
+
+
+check_info['netscreen_temp'] = (check_netscreen_temp, "Temp%s",
+        1, inventory_netscreen_temp)
+
+snmp_info['netscreen_temp'] = ( '.1.3.6.1.4.1.3224.21.4.1', [
+        '1',    # NETSCREEN-CHASSIS-MIB::nsTemperatureId
+        '2',    # NETSCREEN-CHASSIS-MIB::nsTemperatureSlotId
+        '3',    # NETSCREEN-CHASSIS-MIB::nsTemperatureCur
+        '4',    # NETSCREEN-CHASSIS-MIB::nsTemperatureDesc
+    ])
+
+snmp_scan_functions['netscreen_temp'] = \
+        lambda oid: oid('.1.3.6.1.2.1.1.2.0').startswith('.1.3.6.1.4.1.3224.1')

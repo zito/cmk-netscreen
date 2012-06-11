@@ -1,0 +1,85 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+###############################################################################
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###############################################################################
+
+
+# The check has been developed using a Netscreen on
+#   Juniper SSG-520 version 6.2.0r4.0 (Firewall+VPN) and
+#   Juniper SSG5-Serial version 6.1.0r2.0 (Firewall+VPN)
+#
+# +------------------------------------------------------------------+
+# | This file has been contributed by:                               |
+# |                                                                  |
+# | Václav Ovsík <vaclav.ovsik@gmail.com>             Copyright 2012 |
+# +------------------------------------------------------------------+
+
+# Example info:
+#   [['354', '8064', '1132675']]
+#
+
+netscreen_sess_default_levels = (80, 90)
+
+def inventory_netscreen_sess(info):
+    if len(info[0]) != 3:
+        return
+    return [ (None, 'netscreen_sess_default_levels') ]
+
+def check_netscreen_sess(item, params, info):
+    (sess_alloc, sess_max, sess_fail) = [ saveint(x) for x in info[0] ]
+    sess_percent = ( 100 * sess_alloc + sess_max / 2 ) / sess_max
+    status = 0
+    txt = "Sessions count: %d (max %d), usage: %d%%" \
+            % (sess_alloc, sess_max, sess_percent)
+    this_time = time.time()
+    sess_fail_timediff, sess_fail_rate = \
+            get_counter("netscreen_sess.fail", this_time, sess_fail)
+    if params:
+        (warn, crit) = params
+    else:
+        warn = crit = None
+    if crit and sess_percent >= crit:
+        txt += ' (!! >%d)' % crit
+        status = max(status, 2)
+    elif warn and sess_percent >= warn:
+        txt += ' (! >%d)' % warn
+        status = max(status, 1)
+    txt += ', '
+    txt += "failed: %d, fail rate: %d" % (sess_fail, sess_fail_rate)
+    if warn:
+        sess_warn = warn * sess_max / 100
+    else:
+        sess_warn = None
+    if crit:
+        sess_crit = crit * sess_max / 100
+    else:
+        sess_crit = None
+    perf = [('sessions', sess_alloc, sess_warn, sess_crit),
+            ('session_fail_rate', sess_fail_rate)]
+    return (status, {0:'OK', 1:'WARN', 2:'CRIT'}[status] + ' - ' + txt, perf)
+
+
+check_info['netscreen_sess'] = (check_netscreen_sess, "Sessions",
+        1, inventory_netscreen_sess)
+
+snmp_info['netscreen_sess'] = ( '.1.3.6.1.4.1.3224.16.3', [
+        '2',    # NETSCREEN-RESOURCE-MIB::nsResSessAllocate
+        '3',    # NETSCREEN-RESOURCE-MIB::nsResSessMaxium
+        '4',    # NETSCREEN-RESOURCE-MIB::nsResSessFailed
+    ])
+
+snmp_scan_functions['netscreen_sess'] = \
+        lambda oid: oid('.1.3.6.1.2.1.1.2.0').startswith('.1.3.6.1.4.1.3224.1')

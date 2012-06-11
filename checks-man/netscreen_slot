@@ -1,0 +1,13 @@
+title: Netscreen slot check
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPLv3
+distribution: check_mk
+description:
+ This check monitors slots of Juniper Netscreen device using
+ NETSCREEN-CHASSIS-MIB. All slots in the devices MIB are inventorized (one check
+ item per slot). The check is OK if the status of the slot is ok(1) and is
+ critical otherwise.
+
+inventory:
+ Inventory is supported. Slots found on Netscreen device are inventorized.
