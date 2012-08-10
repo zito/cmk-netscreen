@@ -53,10 +53,10 @@ def check_netscreen_temp(item, params, info):
     warn, crit = params
     status = 0
     if crit and tcurr >= crit:
-        txt += ' (!!) >%d' % crit
+        txt += ' (!!) >=%d' % crit
         status = 2
     elif warn and tcurr >= warn:
-        txt += ' (!) >%d' % warn
+        txt += ' (!) >=%d' % warn
         status = 1
     return (status, {0:'OK', 1:'WARN', 2:'CRIT'}[status] + ' - ' + txt,
             [('temp', tcurr, warn, crit)])

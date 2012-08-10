@@ -52,10 +52,10 @@ def check_netscreen_sess(item, params, info):
     else:
         warn = crit = None
     if crit and sess_percent >= crit:
-        txt += ' (!!) >%d' % crit
+        txt += ' (!!) >=%d' % crit
         status = max(status, 2)
     elif warn and sess_percent >= warn:
-        txt += ' (!) >%d' % warn
+        txt += ' (!) >=%d' % warn
         status = max(status, 1)
     txt += ', '
     txt += "failed: %d, fail rate: %d" % (sess_fail, sess_fail_rate)

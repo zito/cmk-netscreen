@@ -53,10 +53,10 @@ def check_netscreen_cpu(item, params, info):
         else:
             warn = crit = None
         if crit and v >= crit:
-            txt += ' (!!) >%d' % crit
+            txt += ' (!!) >=%d' % crit
             status = max(status, 2)
         elif warn and v >= warn:
-            txt += ' (!) >%d' % warn
+            txt += ' (!) >=%d' % warn
             status = max(status, 1)
         txt += ', '
         perf.append(('cpu'+item, str(v)+'%',warn,crit))
