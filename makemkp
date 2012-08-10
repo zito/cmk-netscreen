@@ -59,7 +59,7 @@ class fake_file:
 #-----------------------------------------------------------------------
 
 pacname = 'cmk-netscreen'
-version = '1.1'
+version = '1.2'
 
 filelists = {}
 package = {
